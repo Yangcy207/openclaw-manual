@@ -29,7 +29,3 @@ openclaw-manual/
 - **本地开发**：查看 [Windows 安装指南](./windows-install/README.md)
 - **生产部署**：查看 [云端部署指南](./cloud-deployment/README.md)
 - **功能扩展**：查看 [Skill 和 MCP 工具指南](./skills-mcp-guide/README.md)
-
-## 📝 贡献
-
-欢迎提交 PR 完善文档内容。

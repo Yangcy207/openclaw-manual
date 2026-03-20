@@ -1,30 +1,42 @@
 # OpenClaw Windows 安装指南
 
-本文档提供了在 Windows 系统上安装 OpenClaw 的详细步骤，包括直接安装和 Docker 镜像安装两种方式。
+本文档提供了在 Windows 系统上安装 OpenClaw 的详细步骤，提供多种安装方式供您选择。
 
 ## 端口配置说明
 
 为避免端口冲突，不同安装方式使用不同的端口：
 - Windows 直接安装：使用默认端口 18789
 - Docker 镜像安装：使用端口 18791
-- WSL 安装：使用默认端口 18789（已存在）
-- 本指南中的示例：使用端口 18793（避免与已存在的服务冲突）
+- WSL 安装：使用默认端口 18789（适用于Linux的Windows子系统,可以在windows 10或11系统直接运行Linux环境）
 
-## Windows 直接安装
+## 安装方式选择
+
+OpenClaw 提供以下安装方式：
+
+1. **方式一：使用 npm 直接安装（推荐）** - 最简单直接的方式
+2. **方式二：使用本地安装脚本** - 适合需要自动安装依赖的场景
+3. **方式三：Docker 镜像安装** - 适合容器化部署
+4. **方式四：从源码安装** - 适合开发者
+
+---
+
+## 方式一：使用 npm 直接安装（推荐）
 
 ### 前置要求
 - Windows 10 或 Windows 11
-- PowerShell 5.1 或更高版本
-- Node.js 24+（安装脚本会自动尝试安装）
-- Git（安装脚本会自动尝试安装）
+- Node.js 22+（[下载地址](https://nodejs.org) node -v 检查版本号是否为 22.x.x）
+- npm（随 Node.js 一起安装）(npm --version 检查版本号)
 
 ### 安装步骤
 
 1. **打开 PowerShell**（以管理员身份运行）
 
-2. **执行安装脚本**：
+2. **安装 OpenClaw**：
    ```powershell
-   iwr -useb https://openclaw.ai/install.ps1 | iex
+   npm install -g openclaw@latest
+   # 若出现a git connection error occurred 或是 Permission denied(publickey)
+   git config --global url."https://".insteadOf "ssh://"
+   git config --global http.sslverify "false"
    ```
 
 3. **验证安装**：
@@ -32,12 +44,17 @@
    openclaw --version
    ```
 
-4. **启动网关服务**（在后台运行）：
+4. **完成初始化设置**：
    ```powershell
-   Start-Process -FilePath 'powershell' -ArgumentList '-ExecutionPolicy Bypass -Command "openclaw gateway --allow-unconfigured --port 18793 --bind loopback"' -WindowStyle Minimized
+   openclaw onboard --install-daemon
    ```
 
-5. **验证服务状态**：
+5. **启动网关服务**（如果需要手动启动）：
+   ```powershell
+   openclaw gateway --allow-unconfigured --port 18789
+   ```
+
+6. **验证服务状态**：
    ```powershell
    openclaw status
    ```
@@ -46,14 +63,100 @@
 - 配置目录：`%USERPROFILE%\.openclaw`
 - 工作目录：`%USERPROFILE%\.openclaw\workspace`
 - 默认端口：18789
-- 示例端口：18793（避免冲突）
 - 桥接端口：18790
 
-### 验证结果
-✅ 已成功安装 OpenClaw 2026.3.13
-✅ 命令行可识别 openclaw 命令
-✅ 版本验证成功
-✅ 网关服务已在后台启动
+---
+
+## 方式二：使用本地安装脚本
+
+### 前置要求
+- Windows 10 或 Windows 11
+- PowerShell 5.1 或更高版本
+- Node.js 22+（安装脚本会自动尝试安装）
+- Git（安装脚本会自动尝试安装）
+
+### 安装步骤
+
+1. **打开 PowerShell**（以管理员身份运行）
+
+2. **下载安装脚本**：
+   ```powershell
+   # 方法A：从 GitHub 下载
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/openclaw/openclaw/main/scripts/install.ps1" -OutFile "install.ps1"
+   
+   # 方法B：如果已克隆仓库，直接使用本地脚本
+   # cd M:\Tianqing_Space\openclaw\openclaw\scripts
+   ```
+
+3. **执行安装脚本**：
+   ```powershell
+   # 使用默认参数安装（npm 方式）
+   .\install.ps1
+   
+   # 或者指定版本
+   .\install.ps1 -Tag "latest"
+   
+   # 或者使用 Git 方式安装
+   .\install.ps1 -InstallMethod "git" -GitDir "$env:USERPROFILE\openclaw"
+   ```
+
+4. **完成初始化设置**：
+   ```powershell
+   openclaw onboard
+   ```
+
+5. **验证安装**：
+   ```powershell
+   openclaw --version
+   ```
+
+6. **启动网关服务**（在后台运行）：
+   ```powershell
+   Start-Process -FilePath 'powershell' -ArgumentList '-ExecutionPolicy Bypass -Command "openclaw gateway --allow-unconfigured --port 18789 --bind loopback"' -WindowStyle Minimized
+   ```
+
+7. **验证服务状态**：
+   ```powershell
+   openclaw status
+   ```
+
+### 配置信息
+- 配置目录：`%USERPROFILE%\.openclaw`
+- 工作目录：`%USERPROFILE%\.openclaw\workspace`
+- 默认端口：18789
+- 桥接端口：18790
+
+### 安装脚本参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `-InstallMethod` | 安装方式：npm 或 git | npm |
+| `-Tag` | npm 安装版本标签 | latest |
+| `-GitDir` | Git 安装目录 | `$env:USERPROFILE\openclaw` |
+| `-NoOnboard` | 跳过初始化设置提示 | false |
+| `-NoGitUpdate` | Git 安装时不更新仓库 | false |
+| `-DryRun` | 仅显示将要执行的操作 | false |
+
+### 常见问题
+
+**Q: 执行策略限制错误**
+
+如果遇到执行策略限制，运行以下命令：
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
+
+**Q: Node.js 版本过低**
+
+安装脚本会自动尝试安装 Node.js 22+，如果失败，请手动安装：
+- 访问 [Node.js 官网](https://nodejs.org) 下载 LTS 版本
+- 或使用 winget：`winget install OpenJS.NodeJS.LTS`
+
+**Q: Git 未安装**
+
+安装脚本会自动尝试安装 Git，如果失败，请手动安装：
+- 访问 [Git 官网](https://git-scm.com) 下载
+- 或使用 winget：`winget install Git.Git`
 
 ## Docker 镜像安装
 
@@ -163,7 +266,16 @@ openclaw logs
 docker ps
 
 # 测试健康检查
-Invoke-WebRequest http://localhost:18791/healthz
+Invoke-WebRequest -UseBasicParsing http://localhost:18791/healthz
+```
+
+### 从源码安装验证
+```powershell
+# 检查版本
+pnpm --version
+
+# 运行测试
+pnpm test
 ```
 
 ## 配置信息汇总
@@ -173,6 +285,7 @@ Invoke-WebRequest http://localhost:18791/healthz
 | Windows 直接安装 | `%USERPROFILE%\.openclaw` | `%USERPROFILE%\.openclaw\workspace` | 18789/18793 | 18790 | http://localhost:18789 或 http://localhost:18793 |
 | Docker 镜像安装 | `./config` | `./workspace` | 18791 | 18792 | http://localhost:18791 |
 | WSL 安装 | `~/.openclaw` | `~/.openclaw/workspace` | 18789 | 18790 | http://localhost:18789 |
+| 从源码安装 | `%USERPROFILE%\.openclaw` | `%USERPROFILE%\.openclaw\workspace` | 18789 | 18790 | http://localhost:18789 |
 
 ## 常见问题
 
